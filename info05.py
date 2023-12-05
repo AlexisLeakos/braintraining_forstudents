@@ -1,17 +1,16 @@
 # Training (INFO05)
 # JCY oct 23
 # PRO DB PY
-import math
-import tkinter as tk
-from tkinter.messagebox import showinfo          # Les alertes
-import random
-from math import cos, sin, pi
-from colorsys import hsv_to_rgb, rgb_to_hsv
-from math import sqrt
-import time
-import database
+
 import datetime
-from tkinter.messagebox import *
+import random
+import time
+import tkinter as tk
+from colorsys import hsv_to_rgb, rgb_to_hsv
+from math import cos, sin, pi
+from math import sqrt
+from tkinter import messagebox
+import database
 
 # Main window
 # graphical variables
@@ -21,7 +20,7 @@ xmed=250 #middle of 2 color rectangles
 
 
 #important data (to save)
-pseudo="Gaston" #provisory pseudo for user
+pseudo="" #provisory pseudo for user
 exercise="INFO05"
 nbtrials=0 #number of total trials
 nbsuccess=0 #number of successfull trials
@@ -190,21 +189,27 @@ def sl_v(event):
     display()
 
 
+# confirm if the value have been saved in the database
 def save_game(event):
+    database.open_dbconnection()
+    process = database.insert_game_results(entry_pseudo.get(), exercise, nbtrials, nbsuccess, duration_s, s_start_date, window_info05)
+    if process == True: print("Okay")
+    else: print("Failed")
+    database.close_dbconnection()
     print("dans save")
-    #TODO
 
 
 def display_timer():
-    duration=datetime.datetime.now()-start_date #elapsed time since beginning, in time with decimals
-    duration_s=int(duration.total_seconds()) #idem but in seconds (integer)
-    #display min:sec (00:13)
+    global duration_s
+    duration=datetime.datetime.now()-start_date # elapsed time since beginning, in time with decimals
+    duration_s=int(duration.total_seconds()) # idem but in seconds (integer)
+    # display min:sec (00:13)
     lbl_duration.configure(text="{:02d}".format(int(duration_s /60)) + ":" + "{:02d}".format(duration_s %60))
-    window_info05.after(1000, display_timer) #recommencer après 15 ms
+    window_info05.after(1000, display_timer) # recommencer après 15 ms
 
 
 def open_window_info_05(window):
-    global window_info05, lbl_duration, lbl_result, hex_color, start_date, slider_r, slider_g, slider_b, slider_v, entry_response, canvas
+    global window_info05, lbl_duration, lbl_result, hex_color, start_date, slider_r, slider_g, slider_b, slider_v, entry_response, canvas, start_date, entry_pseudo, s_start_date
     window_info05 = tk.Toplevel(window)
     window_info05.title("La couleur perdue")
     window_info05.geometry("1100x900")
@@ -264,6 +269,7 @@ def open_window_info_05(window):
     display_wheel_color()
     next_color(event=None)
     start_date = datetime.datetime.now()
+    s_start_date = start_date.date()
     display_timer()
 
     # Association de la fonction au clic sur le canvas

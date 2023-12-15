@@ -2,10 +2,11 @@
 author:      Leakos Alexis
 start date:  14.11.23
 description: functions that impact the database or get information from there.
+last modification date:
 """
 
 # Imports
-import mysql.connector
+import mysql.connector, datetime
 import tkinter
 from tkinter import messagebox
 
@@ -31,9 +32,18 @@ def get_student_id_by_nickname(pseudo):
     query = "SELECT id FROM students WHERE nickname = %s"
     cursor = db_connection.cursor()
     cursor.execute(query, (pseudo,))
-    result_id = cursor.fetchall()
+    result_id = cursor.fetchone()
     cursor.close()
     return result_id
+
+
+def get_student_nickname_by_id(id):
+    query = "SELECT nickname FROM students WHERE id = %s"
+    cursor = db_connection.cursor()
+    cursor.execute(query, (id,))
+    result_name = cursor.fetchone()
+    cursor.close()
+    return result_name
 
 
 # ...to get a exercises id by his name
@@ -41,9 +51,17 @@ def get_exercise_id_by_name(exercise):
     query = "SELECT id FROM exercises WHERE name = %s"
     cursor = db_connection.cursor()
     cursor.execute(query, (exercise,))
-    result_id = cursor.fetchall()
+    result_id = cursor.fetchone()
     cursor.close()
     return result_id
+
+def get_exercise_name_by_id(id):
+    query = "SELECT name FROM exercises WHERE id = %s"
+    cursor = db_connection.cursor()
+    cursor.execute(query, (id,))
+    result_name = cursor.fetchone()
+    cursor.close()
+    return result_name
 
 
 # ...to insert a new student in the students' data
@@ -62,6 +80,15 @@ def add_exercise(exercise):
     cursor.close()
 
 
+# ... to delete the selected data in the database
+def delete_result(id):
+    open_dbconnection()
+    query = "DELETE FROM students_has_exercises WHERE id=%s"
+    cursor = db_connection.cursor()
+    cursor.execute(query, (id,))
+    close_dbconnection()
+
+
 # ...to insert the datas given.
 def insert_game_results(pseudo, exercise, nbtrials, nbsuccess, duration_s, start_date, window):
     if nbtrials == 0:
@@ -74,57 +101,110 @@ def insert_game_results(pseudo, exercise, nbtrials, nbsuccess, duration_s, start
         return False
     else:
         ex_id = get_exercise_id_by_name(exercise)
-        if ex_id == []:
+        if ex_id == None:
             add_exercise(exercise)
-            ex_id = get_exercise_id_by_name(exercise)[0][0]
+            ex_id = get_exercise_id_by_name(exercise)[0]
         else:
-            ex_id = ex_id[0][0]
-        print(ex_id)
+            ex_id = ex_id[0]
+        # print(ex_id)
         name_id = get_student_id_by_nickname(pseudo)
-        if name_id == []:
+        if name_id == None:
             add_student(pseudo)
-            name_id = get_student_id_by_nickname(pseudo)[0][0]
+            name_id = get_student_id_by_nickname(pseudo)[0]
         else:
-            name_id = name_id[0][0]
-        print(name_id)
+            name_id = name_id[0]
+        # print(name_id)
         query = "INSERT INTO students_has_exercises (try, success, chronometer, start_date_and_time, student_id, exercise_id) VALUES (%s, %s, %s, %s, %s, %s)"
         cursor = db_connection.cursor()
         cursor.execute(query, (nbtrials, nbsuccess, duration_s, start_date, name_id,
                                ex_id))  # todo trouver un moyen d'enregister correctement les heures dans "start_date_and_time"
+
         cursor.close()
         return True
 
 
-# ... to display all results in results window
-def show_database():
+# ... to modify the results already saved.
+def modify_results(dataset, id):
     open_dbconnection()
+    try:
+        exercise_id = get_exercise_name_by_id(dataset[3])[0]
+        date_data = dataset[1].split(" ")
+        date_date_data = date_data[0].split("-")
+        date_time_data = date_data[1].split(":")
+        final_date = datetime.datetime(int(date_date_data[0]), int(date_date_data[1]), int(date_date_data[2]),
+                                       int(date_time_data[0]), int(date_time_data[1]), int(date_time_data[2]))
+        final_time = dataset[2]
+        okay_tries = int(dataset[4])
+        total_tries = int(dataset[5])
+    except:
+        return
+    query = "UPDATE results SET pseudo = %s, date_et_heure = %s, temp = %s, nb_trials = %s, nb_ok = %s, minigame_id = %s WHERE id=%s"
     cursor = db_connection.cursor()
-    query = "SELECT students.nickname, students_has_exercises.start_date_and_time, students_has_exercises.chronometer, exercises.name, students_has_exercises.success, students_has_exercises.try FROM students_has_exercises INNER JOIN students ON students_has_exercises.student_id = students.id INNER JOIN exercises ON students_has_exercises.exercise_id = exercises.id"
-    cursor.execute(query, )
-    data = cursor.fetchall()
+    cursor.execute(query, (dataset[0], final_date, final_time, total_tries, okay_tries, exercise_id, id))
+
+
+    #todo function "create"
+
+
+
+# ... to display all results in results window
+def show_database(name, exercise):
+    open_dbconnection()
+    if exercise != "" and exercise != "ANY":
+        try:
+            exercise_id = get_exercise_id_by_name(exercise)
+        except:
+            return False
+    if name != "":
+        try:
+            st_id = get_student_id_by_nickname(name)
+        except:
+            return False
+    cursor = db_connection.cursor()
+    query = "SELECT student_id, start_date_and_time, chronometer, exercise_id, success, try, id FROM students_has_exercises"
+    if name != "" and exercise != "" and exercise != "ANY":
+        query += f" WHERE student_id = %s AND exercise_id = %s"
+        cursor.execute(query, (st_id, exercise_id))
+    elif name != "":
+        st_id = get_student_id_by_nickname(name)
+        query += f" WHERE student_id = %s"
+        cursor.execute(query, st_id)
+    elif exercise != "" and exercise != "ANY":
+
+        query += f" WHERE exercise_id = %s"
+        cursor.execute(query, exercise_id)
+    else:
+        cursor.execute(query)
+    results_unnamed = cursor.fetchall()
+    results = []
+    for result_set in results_unnamed:
+        results.append((get_student_nickname_by_id(result_set[0]), result_set[1], result_set[2], get_exercise_name_by_id(result_set[3]),
+                        result_set[4], result_set[5], result_set[6]))
     cursor.close()
     close_dbconnection()
-    return data
+    return results
 
 
-# ... to display specific results defined by user
-def select_where(name, exercise):  # TODO
-    input_data = []
-    if name != "":
-        input_data.append(get_student_id_by_nickname(name)[0])
-    if exercise != "":
-        input_data.append(get_exercise_id_by_name(exercise)[0])
+def show_summerized_results(name="", exercise=""):
+    open_dbconnection()
     cursor = db_connection.cursor()
-
-    query = "SELECT students.nickname, students_has_exercises.start_date_and_time, students_has_exercises.chronometer, exercises.name, students_has_exercises.success, students_has_exercises.try FROM students_has_exercises INNER JOIN students ON students_has_exercises.student_id = students.id INNER JOIN exercises ON students_has_exercises.exercise_id = exercises.id "
-    if name != "" and exercise != "" or name != "" and exercise != "Any" :
-        query += "WHERE students.nickname %s AND exercises.name = %s"
+    query = "SELECT count(student_id), sum(chronometer), sum(success), sum(try) FROM students_has_exercises"
+    if name != "" and exercise != "" and exercise != "Any":
+        st_id = get_student_id_by_nickname(name)[0]
+        exercise_id = get_exercise_id_by_name(exercise)[0]
+        query += f" WHERE student_id = %s AND exercise_id = %s"
+        cursor.execute(query, (st_id, exercise_id))
     elif name != "":
-        query += "WHERE students.nickname %s"
-    elif exercise != "" or exercise != "Any":
-        query += "WHERE exercises.name = %s"
-
-    cursor.execute(query, input_data)
-    results = cursor.fetchall()
+        st_id = get_student_id_by_nickname(name)
+        query += f" WHERE student_id = %s"
+        cursor.execute(query, st_id)
+    elif exercise != "" and exercise != "Any":
+        exercise_id = get_exercise_id_by_name(exercise)
+        query += f" WHERE exercise_id = %s"
+        cursor.execute(query, exercise_id)
+    else:
+        cursor.execute(query)
+    results = cursor.fetchall()[0]
     cursor.close()
+    close_dbconnection()
     return results

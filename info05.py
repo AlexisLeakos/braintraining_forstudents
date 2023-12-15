@@ -1,7 +1,11 @@
 # Training (INFO05)
 # JCY oct 23
 # PRO DB PY
-
+"""
+modifier par Leakos Alexis
+DATE MODIFICATION : 05.12.23
+DESCRIPTION : Fichier de l'exercice INFO05
+"""
 import datetime
 import random
 import time
@@ -191,12 +195,20 @@ def sl_v(event):
 
 # confirm if the value have been saved in the database
 def save_game(event):
+    global nbsuccess, nbtrials
     database.open_dbconnection()
     process = database.insert_game_results(entry_pseudo.get(), exercise, nbtrials, nbsuccess, duration_s, s_start_date, window_info05)
-    if process == True: print("Okay")
-    else: print("Failed")
+    if process == True:
+        print("Okay")
+        nbsuccess = 0
+        nbtrials = 0
+
+    else:
+        print("Failed")
     database.close_dbconnection()
     print("dans save")
+    nbsuccess = 0
+    nbtrials = 0
 
 
 def display_timer():

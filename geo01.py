@@ -1,6 +1,11 @@
 # Training (GEO01)
 # JCY oct 23
 # PRO DB PY
+"""
+modifier par Leakos Alexis
+DATE MODIFICATION : 05.12.23
+DESCRIPTION : Fichier de l'exercice GEO01
+"""
 
 import datetime
 import random
@@ -90,15 +95,20 @@ def next_point(event):
 
 # confirm if the value have been saved in the database
 def save_game(event):
+    global nbsuccess, nbtrials
     database.open_dbconnection()
     process = database.insert_game_results(entry_pseudo.get(), exercise, nbtrials, nbsuccess, duration_s, s_start_date,
                                            window_geo01)
     if process == True:
         print("Okay")
+        nbsuccess = 0
+        nbtrials = 0
+
     else:
         print("Failed")
     database.close_dbconnection()
     print("dans save")
+
 
 
 def display_timer():

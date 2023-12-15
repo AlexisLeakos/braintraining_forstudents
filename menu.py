@@ -3,9 +3,15 @@
 # JCY oct 23
 # PRO DB PY
 #############################
-
+"""
+DATE MODIFICATION : 05.12.2023
+AUTEUR : Leakos Alexis
+DESCRIPTION : fichier contenant la page d'accueil
+avec les multiples choix de direction
+ainsi que la page d'affichage des résultats
+"""
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import geo01
 import info02
 import info05
@@ -29,19 +35,66 @@ def exercise(event, exer):
     dict_games[exer](window)
 
 
-# get the results from user parameters
-def view_specific_results():
-    print("test")  # TODO si bar de progression inactif |-> suite des lignes ne s'affichent pas. TO PATCH
-    database.select_where()
+class destroy_button():
+    def __init__(self, frame, student_id, rowD, data):
+        self.button_delete = tk.Button(frame, text="supprimer", command=lambda: destroy_result(student_id, data, frame))
+        self.button_delete.grid(row=rowD, column=8)
+
+
+class ModifyButton:
+    def __init__(self, parameter_frame, frame, student_id, data, rowD):
+        self.modify_button = tk.Button(parameter_frame, text="Modifier",
+                                            command=lambda: modification_window(frame, data, id=student_id))
+        self.modify_button.grid(row=rowD, column=7)
+
+
+def modify(student_id, data, frame):
+    database.modify_results(data, student_id)
+    show_results(frame, data[0], data[1])
+
+
+# window to modify the datas
+def modification_window(parent_frame, data, id=None, table_type="modify"):
+    updated_results_window = tk.Toplevel(parent_frame)
+    updated_results_window.title("modification des résultats")
+    updated_results_window.geometry("1080x255")
+
+    update_frame = tk.Frame(updated_results_window,padx=15)
+    update_frame.pack()
+    # items to modify
+    updating_datas = ["temps", "nb OK", "nb Total"]
+    for updating_data in range(len(updating_datas)):
+        info_item = tk.Label(update_frame, text=updating_datas[updating_data])
+        info_item.grid(row=0, column=0 + updating_data)
+    name_entry = tk.Entry(update_frame)
+    dateTime_entry = tk.Entry(update_frame)
+    time_entry = tk.Entry(update_frame)
+    exercise_entry = tk.Entry(update_frame)
+    OK_entry = tk.Entry(update_frame)
+    total_entry = tk.Entry(update_frame)
+
+    entries = [time_entry, OK_entry, total_entry]
+    for inserted_entry in range(len(entries)):
+        entries[inserted_entry].grid(row=1, column=inserted_entry)
+    if OK_entry.get() <= total_entry.get():
+        button_finish = tk.Button(update_frame, text="Valider", command=lambda:modify(id, data=[time_entry.get(), OK_entry.get(), total_entry.get()], frame=parent_frame))
+        button_finish.grid(row=2, column=4)
+    else:
+        tk.messagebox.showerror(parent=window, title="Rhoooo le tricheur...", message="On va dire que tu t'es trompé entre les deux.")
+        return entries
+
+def destroy_result(student_id, data, frame):
+    database.delete_result(student_id)
+    show_results(frame, data[0], data[1])
 
 
 # call display_results
-def display_result(event):  # TODO
+def display_result(event):  # TODO finish it
     # create new window and organise it
-    global progress_bar
+    global progress_bar, window_results
     window_results = tk.Toplevel(window)
     window_results.title("Résultats")
-    window_results.geometry("1100x900")
+    window_results.geometry("1400x1100")
 
     # Upper part
     upper_frame = tk.Frame(window_results)
@@ -56,10 +109,11 @@ def display_result(event):  # TODO
 
     # Labels and Entry widgets for parameters
     parameters_labels = ["Pseudo:"]
-    parameters_entries = []
+    parameters_entries = {}
 
     exercise_value = tk.StringVar(parameters_frame)
-    cbo_entry_exercice_create = ttk.Combobox(parameters_frame, textvariable=exercise_value, font=("Arial", 10), width=15)
+    cbo_entry_exercice_create = ttk.Combobox(parameters_frame, textvariable=exercise_value, font=("Arial", 10),
+                                             width=15)
     cbo_entry_exercice_create.grid(row=0, column=0)
     cbo_entry_exercice_create['values'] = ('ANY', 'GEO01', 'INFO02', 'INFO05')
     '''
@@ -73,38 +127,32 @@ def display_result(event):  # TODO
 
         entry = tk.Entry(parameters_frame, font=("Helvetica", 12))
         entry.grid(row=0, column=i + 2, padx=5, pady=5, sticky="w")
-        parameters_entries.append(entry)
-
-    # Button to view results
-    view_results_button = tk.Button(parameters_frame, text="Voir résultats", command=view_specific_results(name,exercise),
-                                    font=("Helvetica", 12))
-    view_results_button.grid(row=1, columnspan=len(parameters_labels) + 1, pady=10)
+        parameters_entries[label_text] = entry
+        print(parameters_entries["Pseudo:"].get())
 
     # Middle part with parameters
     parameters_frame = tk.Frame(window_results)
     parameters_frame.pack(pady=20)
 
+    # Results
+    main_results_frame = tk.Frame(window_results)
+    main_results_frame.pack()
+    results_frame = tk.Frame(main_results_frame)
+    results_frame.grid(row=0, column=0, pady=20)
+
+    # Button to view results
+    view_results_button = tk.Button(parameters_frame, text="Voir résultats",
+                                    command=lambda: show_results(results_frame, parameters_entries["Pseudo:"].get(),
+                                                                 cbo_entry_exercice_create.get()),
+                                    font=("Helvetica", 12))
+    view_results_button.grid(row=0, columnspan=len(parameters_labels) + 1, pady=10)
+
     # Labels for each column
-    columns = ["Elève", "Date heure", "Temps", "Exercice", "nb OK", "nb Total", "% réussi"]
+    columns = ["Elève", "Date heure", "Temps", "Exercice", "nb OK", "nb Total", "% réussi", "Modify", "Delete"]
 
     for col in columns:
-        label = tk.Label(parameters_frame, text=col, relief=tk.RIDGE, width=15, font=("Helvetica", 12))
+        label = tk.Label(results_frame, text=col, relief=tk.RIDGE, width=15, font=("Helvetica", 12))
         label.grid(row=0, column=columns.index(col))
-
-    # Add sample data (replace this with your actual data)
-    sample_data = database.show_database()
-
-    for data in range(len(sample_data)):
-        for info in range(len(sample_data[data])):
-            print(sample_data[data][info])
-            label = tk.Label(parameters_frame, text=sample_data[data][info], relief=tk.RIDGE, width=15,
-                             font=("Helvetica", 10))
-            label.grid(row=data + 1, column=info)
-
-        # Add a progress bar in the last column
-        progress_bar = ttk.Progressbar(parameters_frame, orient="horizontal", mode="determinate",
-                                       length=100, value=round(float(sample_data[data][4]) / float(sample_data[data][5]) * 100, 2))
-        progress_bar.grid(row=data + 1, column=6, padx=5)
 
     # Total box
     total_box = tk.Frame(window_results)
@@ -113,23 +161,70 @@ def display_result(event):  # TODO
     total_label = tk.Label(total_box, text="Total", font=("Helvetica", 16))
     total_label.pack()
 
-    # Last part with 5 columns
-    last_part_frame = tk.Frame(window_results)
-    last_part_frame.pack(pady=20)
+    # Last part for summarized showed
+    summer_frame = tk.Frame(window_results)
+    summer_frame.pack(pady=20)
 
-    last_part_columns = ["NbLignes", "Temps total", "Nb Total", "% Total"]
+    summerised_columns = ["Nbessais", "Temps total", "Nb Total", "% Total", "% Visual"]
 
-    for col in last_part_columns:
-        label = tk.Label(last_part_frame, text=col, relief=tk.RIDGE, width=15, font=("Helvetica", 12))
-        label.grid(row=0, column=last_part_columns.index(col))
+    for col in summerised_columns:
+        label = tk.Label(summer_frame, text=col, relief=tk.RIDGE, width=15, font=("Helvetica", 12))
+        label.grid(row=0, column=summerised_columns.index(col))
 
     # Add sample data for the last part (replace this with your actual data)
-    last_part_data = ["100", "5 hours", "500", "75%"]
+    last_part_data = database.show_summerized_results()
 
     for j, value in enumerate(last_part_data):
-        label = tk.Label(last_part_frame, text=value, relief=tk.RIDGE, width=15, font=("Helvetica", 12))
+        label = tk.Label(summer_frame, text=value, relief=tk.RIDGE, width=15, font=("Helvetica", 12))
         label.grid(row=1, column=j)
     print("display_result")
+
+    accuracy = round(float(last_part_data[2]) / float(last_part_data[3]) * 100, 2)
+
+    # Add a progress bar in the last column
+    progress_bar = ttk.Progressbar(summer_frame, orient="horizontal", mode="determinate",
+                                   length=100, value=accuracy)
+    progress_bar.grid(row=1, column=4, padx=5)
+
+
+def reset_table(frame):
+    for widget in frame.winfo_children():
+        if widget.grid_info()['row'] != 0:
+            widget.destroy()
+
+
+def show_results(results_frame, name="", exercise=""):
+    reset_table(results_frame)
+    # Add sample data (replace this with your actual data)
+    sample_data = database.show_database(name, exercise)
+    if sample_data != False:
+        for data in range(len(sample_data)):
+            for info in range(len(sample_data[data])):
+                # print(sample_data[data][info])
+                label = tk.Label(results_frame, text=sample_data[data][info], relief=tk.RIDGE, width=15,
+                                 font=("Helvetica", 10))
+                label.grid(row=data + 1, column=info)
+
+            accuracy = round(float(sample_data[data][4]) / float(sample_data[data][5]) * 100, 2)
+
+            # Add a progress bar in the last column
+            progress_bar = ttk.Progressbar(results_frame, orient="horizontal", mode="determinate",
+                                           length=100, value=accuracy)
+            progress_bar.grid(row=data + 1, column=6, padx=5)
+
+            # button to modify the data
+            destroy_button_name = f"destroy_button_{data}"
+            modify_button_name = f"modify_button_{data}"
+            #exec(
+            #    "%s = destroy_button(res_frame, student[j][6], [res_frame, variables, tot_frame, window_results], %d, %d)"
+            #    % (destroy_button_name, j + 1, i + 7))
+            exec(
+                "%s = ModifyButton(results_frame, window_results, sample_data[data][6], [results_frame, (name, exercise), window_results], %d)"
+                % (modify_button_name, data + 1))
+            # Button to delete the data
+            button_delete_name = f"button_delete_{data}"
+            exec("%s = destroy_button(results_frame, %d, %d, data=%s)" % (
+            button_delete_name, sample_data[data][6], data + 1, [name, exercise]))
 
 
 # Main window

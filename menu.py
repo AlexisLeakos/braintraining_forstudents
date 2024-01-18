@@ -4,7 +4,7 @@
 # PRO DB PY
 #############################
 """
-DATE MODIFICATION : 05.12.2023
+DATE MODIFICATION : 18.01.2024
 AUTEUR : Leakos Alexis
 DESCRIPTION : fichier contenant la page d'accueil
 avec les multiples choix de direction
@@ -54,7 +54,7 @@ def modify(student_id, data, frame):
 
 
 # window to modify the datas
-def modification_window(parent_frame, data, id=None, table_type="modify"):
+def modification_window(parent_frame, data, id=None, table_type="modify", ):
     updated_results_window = tk.Toplevel(parent_frame)
     updated_results_window.title("modification des résultats")
     updated_results_window.geometry("1080x255")

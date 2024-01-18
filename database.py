@@ -2,14 +2,12 @@
 author:      Leakos Alexis
 project start date:  14.11.23
 description: functions that impact the database or get information from there.
-file last modification date: 17.01.2024
+file last modification date: 18.01.2024
 """
 
 # Imports
 import mysql.connector, datetime, tkinter, bcrypt
 from tkinter import messagebox
-
-
 
 
 # functions ...
@@ -25,11 +23,10 @@ def open_dbconnection():
 def close_dbconnection():
     db_connection.close()
 
+
 # ...to know if he is the first user of the program
-"""
-We suppose that a teacher will be first to register into the database and to the game.
-We also suppose that the students are honest and won't lie to the question.
-"""
+
+
 def first_user_connection():
     query = "SELECT COUNT(id) FROM students"
     cursor = db_connection.cursor()
@@ -37,6 +34,11 @@ def first_user_connection():
     nb_result = cursor.fetchone()[0]
     print(nb_result)
     return nb_result
+
+"""
+We suppose that a teacher will be first to register into the database and to the game.
+We also suppose that the students are honest and won't lie to the question.
+"""
 
 
 # ...to get a student id by his pseudo
@@ -188,7 +190,8 @@ def show_database(name, exercise):
 def show_summerized_results(name="", exercise=""):
     open_dbconnection()
     cursor = db_connection.cursor()
-    query = "SELECT count(student_id), sum(chronometer), sum(success), sum(try) FROM students_has_exercises"
+    get_student_id_by_nickname(name)
+    query = "SELECT count(student_id), sum(chronometer), sum(success), sum(try) FROM students_has_exercises where student_id = %s"
     if name != "" and exercise != "" and exercise != "Any":
         st_id = get_student_id_by_nickname(name)[0]
         exercise_id = get_exercise_id_by_name(exercise)[0]
@@ -209,6 +212,7 @@ def show_summerized_results(name="", exercise=""):
     close_dbconnection()
     return results
 
+
 # Insert a new student into the database
 def insert_new_student(data, level):
     input_data = [data[0], data[1], level]
@@ -220,12 +224,14 @@ def insert_new_student(data, level):
     cursor.execute(query, input_data)
     cursor.close()
 
+
 # login user
 def check_login(username, password, window):
     from register_login import redirect_to_register, wrong_login_password
     open_dbconnection()
     if username == "" or password == "":
-        tkinter.messagebox.showerror(parent=window, title="informations manquantes", message="Veuillez completer toutes les informations")
+        tkinter.messagebox.showerror(parent=window, title="informations manquantes",
+                                     message="Veuillez completer toutes les informations")
     else:
         cursor = db_connection.cursor()
         query = "SELECT password FROM students WHERE nickname = %s"

@@ -1,30 +1,42 @@
 """
 author:      Leakos Alexis
-start date:  14.11.23
+project start date:  14.11.23
 description: functions that impact the database or get information from there.
-last modification date:
+file last modification date: 17.01.2024
 """
 
 # Imports
-import mysql.connector, datetime
-import tkinter
+import mysql.connector, datetime, tkinter, bcrypt
 from tkinter import messagebox
 
-import database
+
 
 
 # functions ...
 # ...to open the database
 def open_dbconnection():
     global db_connection
-    db_connection = mysql.connector.connect(host='127.0.0.1', port='3306', user='root',
-                                            password='Jenny_4t_the_gate', database='ProjectPYDB',
+    db_connection = mysql.connector.connect(host='127.0.0.1', port='3306', user='userProjDBPY',
+                                            password='Pa$$w0rd', database='ProjectPYDB',
                                             buffered=True, autocommit=True)
 
 
 # ...to close the database
 def close_dbconnection():
     db_connection.close()
+
+# ...to know if he is the first user of the program
+"""
+We suppose that a teacher will be first to register into the database and to the game.
+We also suppose that the students are honest and won't lie to the question.
+"""
+def first_user_connection():
+    query = "SELECT COUNT(id) FROM students"
+    cursor = db_connection.cursor()
+    cursor.execute(query)
+    nb_result = cursor.fetchone()[0]
+    print(nb_result)
+    return nb_result
 
 
 # ...to get a student id by his pseudo
@@ -55,6 +67,7 @@ def get_exercise_id_by_name(exercise):
     cursor.close()
     return result_id
 
+
 def get_exercise_name_by_id(id):
     query = "SELECT name FROM exercises WHERE id = %s"
     cursor = db_connection.cursor()
@@ -62,14 +75,6 @@ def get_exercise_name_by_id(id):
     result_name = cursor.fetchone()
     cursor.close()
     return result_name
-
-
-# ...to insert a new student in the students' data
-def add_student(pseudo):
-    query = "INSERT INTO students (nickname) VALUES (%s)"
-    cursor = db_connection.cursor()
-    cursor.execute(query, (pseudo,))
-    cursor.close()
 
 
 # ...to insert a new exercise
@@ -108,11 +113,6 @@ def insert_game_results(pseudo, exercise, nbtrials, nbsuccess, duration_s, start
             ex_id = ex_id[0]
         # print(ex_id)
         name_id = get_student_id_by_nickname(pseudo)
-        if name_id == None:
-            add_student(pseudo)
-            name_id = get_student_id_by_nickname(pseudo)[0]
-        else:
-            name_id = name_id[0]
         # print(name_id)
         query = "INSERT INTO students_has_exercises (try, success, chronometer, start_date_and_time, student_id, exercise_id) VALUES (%s, %s, %s, %s, %s, %s)"
         cursor = db_connection.cursor()
@@ -142,9 +142,7 @@ def modify_results(dataset, id):
     cursor = db_connection.cursor()
     cursor.execute(query, (dataset[0], final_date, final_time, total_tries, okay_tries, exercise_id, id))
 
-
-    #todo function "create"
-
+    # todo function "create"
 
 
 # ... to display all results in results window
@@ -178,13 +176,15 @@ def show_database(name, exercise):
     results_unnamed = cursor.fetchall()
     results = []
     for result_set in results_unnamed:
-        results.append((get_student_nickname_by_id(result_set[0]), result_set[1], result_set[2], get_exercise_name_by_id(result_set[3]),
+        results.append((get_student_nickname_by_id(result_set[0]), result_set[1], result_set[2],
+                        get_exercise_name_by_id(result_set[3]),
                         result_set[4], result_set[5], result_set[6]))
     cursor.close()
     close_dbconnection()
     return results
 
 
+# make the average of the entire results or the displayed results
 def show_summerized_results(name="", exercise=""):
     open_dbconnection()
     cursor = db_connection.cursor()
@@ -208,3 +208,37 @@ def show_summerized_results(name="", exercise=""):
     cursor.close()
     close_dbconnection()
     return results
+
+# Insert a new student into the database
+def insert_new_student(data, level):
+    input_data = [data[0], data[1], level]
+    password = input_data[1].encode('utf-8')
+    input_data[1] = bcrypt.hashpw(password, bcrypt.gensalt())
+    query = "INSERT INTO students (nickname, password, security_level) VALUES (%s, %s, %s)"
+    cursor = db_connection.cursor()
+    print(input_data)
+    cursor.execute(query, input_data)
+    cursor.close()
+
+# login user
+def check_login(username, password, window):
+    from register_login import redirect_to_register, wrong_login_password
+    open_dbconnection()
+    if username == "" or password == "":
+        tkinter.messagebox.showerror(parent=window, title="informations manquantes", message="Veuillez completer toutes les informations")
+    else:
+        cursor = db_connection.cursor()
+        query = "SELECT password FROM students WHERE nickname = %s"
+        cursor.execute(query, (username,))
+        result = cursor.fetchone()
+        if result != None:
+            result = result[0]
+            if bcrypt.checkpw(password.encode('utf-8'), result.encode('utf-8')):
+                window.destroy()
+                return True
+            else:
+                wrong_login_password()
+        else:
+            redirect_to_register()
+            window.destroy()
+            return False

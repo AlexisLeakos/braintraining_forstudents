@@ -194,10 +194,10 @@ def sl_v(event):
 
 
 # confirm if the value have been saved in the database
-def save_game(event):
+def save_game(event, username):
     global nbsuccess, nbtrials
     database.open_dbconnection()
-    process = database.insert_game_results(entry_pseudo.get(), exercise, nbtrials, nbsuccess, duration_s, s_start_date, window_info05)
+    process = database.insert_game_results(username, exercise, nbtrials, nbsuccess, duration_s, s_start_date, window_info05)
     if process == True:
         print("Okay")
         nbsuccess = 0
@@ -220,7 +220,7 @@ def display_timer():
     window_info05.after(1000, display_timer) # recommencer après 15 ms
 
 
-def open_window_info_05(window):
+def open_window_info_05(window, username):
     global window_info05, lbl_duration, lbl_result, hex_color, start_date, slider_r, slider_g, slider_b, slider_v, entry_response, canvas, start_date, entry_pseudo, s_start_date
     window_info05 = tk.Toplevel(window)
     window_info05.title("La couleur perdue")
@@ -238,9 +238,7 @@ def open_window_info_05(window):
     lbl_duration = tk.Label(window_info05, text="0:00", font=("Arial", 15))
     lbl_duration.grid(row=0,column=2, ipady=5, padx=10,pady=10)
 
-    tk.Label(window_info05, text='Pseudo:', font=("Arial", 15)).grid(row=1, column=0, padx=5, pady=5, sticky='E')
-    entry_pseudo = tk.Entry(window_info05, font=("Arial", 15))
-    entry_pseudo.grid(row=1, column=1,sticky='W')
+    tk.Label(window_info05, text=f'Pseudo: {username}', font=("Arial", 15)).grid(row=1, column=0, padx=5, pady=5, sticky='E')
 
     lbl_result = tk.Label(window_info05, text=f"Essais réussis : 0/0", font=("Arial", 15))
     lbl_result.grid( row=1, column=2, ipady=5, padx=20,pady=10)
@@ -288,7 +286,7 @@ def open_window_info_05(window):
     btn_next.bind("<Button-1>", next_color)
     entry_response.bind("<Return>", test)
     slider_v.bind("<ButtonRelease-1>", sl_v)
-    btn_finish.bind("<Button-1>", save_game)
+    btn_finish.bind("<Button-1>", lambda e: save_game(e, username))
 
     # main loop
     window_info05.mainloop()

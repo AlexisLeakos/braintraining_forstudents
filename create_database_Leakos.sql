@@ -20,6 +20,8 @@ USE `ProjectPYDB` ;
 CREATE TABLE IF NOT EXISTS `ProjectPYDB`.`students` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `nickname` VARCHAR(20) NOT NULL,
+  `password` VARCHAR(200) NOT NULL,
+  `security_level` TINYINT NOT NULL, 
   PRIMARY KEY (`id`),
   UNIQUE INDEX `nickname_UNIQUE` (`nickname` ASC) VISIBLE,
   UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE)
@@ -35,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `ProjectPYDB`.`exercises` (
   PRIMARY KEY (`id`),
   UNIQUE INDEX `name_UNIQUE` (`name` ASC) VISIBLE,
   UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE)
-ENGINE = InnoDB;
+ENGINE = INNODB;
 
 
 -- -----------------------------------------------------

@@ -31,8 +31,8 @@ progress_bar = 0
 
 
 # call other windows (exercices)
-def exercise(event, exer):
-    dict_games[exer](window)
+def exercise(event, exer, window,username):
+    dict_games[exer](window, username)
 
 
 class destroy_button():
@@ -59,7 +59,7 @@ def modification_window(parent_frame, data, id=None, table_type="modify"):
     updated_results_window.title("modification des résultats")
     updated_results_window.geometry("1080x255")
 
-    update_frame = tk.Frame(updated_results_window,padx=15)
+    update_frame = tk.Frame(updated_results_window, padx=15)
     update_frame.pack()
     # items to modify
     updating_datas = ["temps", "nb OK", "nb Total"]
@@ -80,7 +80,7 @@ def modification_window(parent_frame, data, id=None, table_type="modify"):
         button_finish = tk.Button(update_frame, text="Valider", command=lambda:modify(id, data=[time_entry.get(), OK_entry.get(), total_entry.get()], frame=parent_frame))
         button_finish.grid(row=2, column=4)
     else:
-        tk.messagebox.showerror(parent=window, title="Rhoooo le tricheur...", message="On va dire que tu t'es trompé entre les deux.")
+        tk.messagebox.showerror(parent=updated_results_window, title="Rhoooo le tricheur...", message="On va dire que tu t'es trompé entre les deux.")
         return entries
 
 def destroy_result(student_id, data, frame):
@@ -89,10 +89,10 @@ def destroy_result(student_id, data, frame):
 
 
 # call display_results
-def display_result(event):  # TODO finish it
+def display_result(event):
     # create new window and organise it
     global progress_bar, window_results
-    window_results = tk.Toplevel(window)
+    window_results = tk.Toplevel()
     window_results.title("Résultats")
     window_results.geometry("1400x1100")
 
@@ -179,7 +179,10 @@ def display_result(event):  # TODO finish it
         label.grid(row=1, column=j)
     print("display_result")
 
-    accuracy = round(float(last_part_data[2]) / float(last_part_data[3]) * 100, 2)
+    try:
+        accuracy = round(float(last_part_data[2]) / float(last_part_data[3]) * 100, 2)
+    except:
+        accuracy = 0
 
     # Add a progress bar in the last column
     progress_bar = ttk.Progressbar(summer_frame, orient="horizontal", mode="determinate",
@@ -226,42 +229,58 @@ def show_results(results_frame, name="", exercise=""):
             exec("%s = destroy_button(results_frame, %d, %d, data=%s)" % (
             button_delete_name, sample_data[data][6], data + 1, [name, exercise]))
 
+def open_window(username, privilege):
+    # Main window
+    window = tk.Tk()
+    window.title("Training, entrainement cérébral")
+    window.geometry("1100x900")
 
-# Main window
-window = tk.Tk()
-window.title("Training, entrainement cérébral")
-window.geometry("1100x900")
+    # color définition
+    rgb_color = (139, 201, 194)
+    hex_color = '#%02x%02x%02x' % rgb_color  # translation in hexa
+    window.configure(bg=hex_color)
+    window.grid_columnconfigure((0, 1, 2), minsize=300, weight=1)
 
-# color définition
-rgb_color = (139, 201, 194)
-hex_color = '#%02x%02x%02x' % rgb_color  # translation in hexa
-window.configure(bg=hex_color)
-window.grid_columnconfigure((0, 1, 2), minsize=300, weight=1)
+    # Title création
+    lbl_title = tk.Label(window, text="TRAINING MENU", font=("Arial", 15))
+    lbl_title.grid(row=0, column=1, ipady=5, padx=40, pady=40)
 
-# Title création
-lbl_title = tk.Label(window, text="TRAINING MENU", font=("Arial", 15))
-lbl_title.grid(row=0, column=1, ipady=5, padx=40, pady=40)
+    # labels creation and positioning
+    for ex in range(len(a_exercise)):
+        a_title[ex] = tk.Label(window, text=a_exercise[ex], font=("Arial", 15))
+        a_title[ex].grid(row=1 + 2 * (ex // 3), column=ex % 3, padx=40, pady=10)  # 3 label per row
 
-# labels creation and positioning
-for ex in range(len(a_exercise)):
-    a_title[ex] = tk.Label(window, text=a_exercise[ex], font=("Arial", 15))
-    a_title[ex].grid(row=1 + 2 * (ex // 3), column=ex % 3, padx=40, pady=10)  # 3 label per row
+        a_image[ex] = tk.PhotoImage(file="img/" + a_exercise[ex] + ".gif")  # image name
+        albl_image[ex] = tk.Label(window, image=a_image[ex])  # put image on label
+        albl_image[ex].grid(row=2 + 2 * (ex // 3), column=ex % 3, padx=40, pady=10)  # 3 label per row
+        albl_image[ex].bind("<Button-1>",
+                            lambda event, ex=ex: exercise(event=None, exer=a_exercise[ex], window=window, username=username))  # link to others .py
+        print(a_exercise[ex])
 
-    a_image[ex] = tk.PhotoImage(file="img/" + a_exercise[ex] + ".gif")  # image name
-    albl_image[ex] = tk.Label(window, image=a_image[ex])  # put image on label
-    albl_image[ex].grid(row=2 + 2 * (ex // 3), column=ex % 3, padx=40, pady=10)  # 3 label per row
-    albl_image[ex].bind("<Button-1>",
-                        lambda event, ex=ex: exercise(event=None, exer=a_exercise[ex]))  # link to others .py
-    print(a_exercise[ex])
+    # Buttons, display results & quit
+    btn_display = tk.Button(window, text="Display results", font=("Arial", 15))
+    btn_display.grid(row=1 + 2 * len(a_exercise) // 3, column=1)
+    btn_display.bind("<Button-1>", lambda e: display_result(e))
 
-# Buttons, display results & quit
-btn_display = tk.Button(window, text="Display results", font=("Arial", 15))
-btn_display.grid(row=1 + 2 * len(a_exercise) // 3, column=1)
-btn_display.bind("<Button-1>", lambda e: display_result(e))
+    btn_logout = tk.Button(window, text="Déloguer", font=("Arial", 15))
+    btn_logout.grid(row=2 + 2 * len(a_exercise) // 3, column=1)
+    btn_logout.bind("<Button-1>", lambda e: logout(window))
 
-btn_finish = tk.Button(window, text="Quitter", font=("Arial", 15))
-btn_finish.grid(row=2 + 2 * len(a_exercise) // 3, column=1)
-btn_finish.bind("<Button-1>", quit)
+    btn_finish = tk.Button(window, text="Quitter", font=("Arial", 15))
+    btn_finish.grid(row=3 + 2 * len(a_exercise) // 3, column=1)
+    btn_finish.bind("<Button-1>", quit)
 
-# main loop
-window.mainloop()
+    # main loop
+    window.mainloop()
+
+
+# logout from the game
+def logout(window):
+    from register_login import window_login
+    window.destroy()
+    window_login()
+
+
+if __name__ == "__main__":
+    from register_login import window_login
+    window_login()

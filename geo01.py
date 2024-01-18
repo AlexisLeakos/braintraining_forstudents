@@ -41,7 +41,7 @@ def canvas_click(event):
     # distance between clicked and (x,y)
     dx = abs(click_x - target_x)
     dy = abs(click_y - target_y)
-    d = sqrt((dx) ** 2 + (dy) ** 2)  # Pythagore
+    d = sqrt((dx) ** 2 + (dy) ** 2)  # théorème Pythagore
 
     # display a red circle where clicked (global variable mycircle)
     mycircle = circle(target_x, target_y, 0.5, "red")
@@ -94,10 +94,10 @@ def next_point(event):
 
 
 # confirm if the value have been saved in the database
-def save_game(event):
+def save_game(event, username):
     global nbsuccess, nbtrials
     database.open_dbconnection()
-    process = database.insert_game_results(entry_pseudo.get(), exercise, nbtrials, nbsuccess, duration_s, s_start_date,
+    process = database.insert_game_results(username, exercise, nbtrials, nbsuccess, duration_s, s_start_date,
                                            window_geo01)
     if process == True:
         print("Okay")
@@ -120,7 +120,7 @@ def display_timer():
     window_geo01.after(1000, display_timer)  # recommencer après 15 ms
 
 
-def open_window_geo_01(window):
+def open_window_geo_01(window,username):
     # window = tk.Tk()
     global window_geo01, hex_color, lbl_title, lbl_duration, lbl_result, lbl_target, canvas, start_date, entry_pseudo, s_start_date
     window_geo01 = tk.Toplevel(window)
@@ -140,9 +140,7 @@ def open_window_geo_01(window):
     lbl_duration = tk.Label(window_geo01, text="0:00", font=("Arial", 15))
     lbl_duration.grid(row=0, column=2, ipady=5, padx=10, pady=10)
 
-    tk.Label(window_geo01, text='Pseudo:', font=("Arial", 15)).grid(row=1, column=0, padx=5, pady=5)
-    entry_pseudo = tk.Entry(window_geo01, font=("Arial", 15))
-    entry_pseudo.grid(row=1, column=1)
+    tk.Label(window_geo01, text=f'Pseudo: {username}', font=("Arial", 15)).grid(row=1, column=0, padx=5, pady=5)
 
     lbl_result = tk.Label(window_geo01, text=f"Essais réussis : 0/0", font=("Arial", 15))
     lbl_result.grid(row=1, column=3, padx=5, pady=5, columnspan=4)

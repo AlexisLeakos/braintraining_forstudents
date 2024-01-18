@@ -52,10 +52,10 @@ def next(event):
 
 
 # confirm if the value have been saved in the database
-def save_game(event):
+def save_game(event, username):
     global nbsuccess, nbtrials
     database.open_dbconnection()
-    process = database.insert_game_results(entry_pseudo.get(), exercise, nbtrials, nbsuccess, duration_s, s_start_date,
+    process = database.insert_game_results(username, exercise, nbtrials, nbsuccess, duration_s, s_start_date,
                                            window_info02)
     if process == True:
         print("Okay")
@@ -68,7 +68,7 @@ def save_game(event):
 
 
 
-def test(event):  # TODO counter error from empty answer
+def test(event):
     global n2, nbsuccess, nbtrials
     # Fonction pour tester si la valeur est juste
     n2 = float(entry_n2.get().replace(" ", ""))
@@ -94,7 +94,7 @@ def display_timer():
     window_info02.after(1000, display_timer)  # recommencer après 15 ms
 
 
-def open_window_info_02(window):
+def open_window_info_02(window,username):
     global window_info02, lbl_duration, lbl_result, entry_n2, label_u2, label_n1, hex_color, entry_pseudo, start_date, s_start_date
     window_info02 = tk.Toplevel(window)
 
@@ -113,10 +113,7 @@ def open_window_info_02(window):
     lbl_duration = tk.Label(window_info02, text="0:00", font=("Arial", 15))
     lbl_duration.grid(row=0, column=2, ipady=5, padx=10, pady=10)
 
-    tk.Label(window_info02, text='Pseudo:', font=("Arial", 15)).grid(row=1, column=0, padx=5, pady=5)
-    entry_pseudo = tk.Entry(window_info02, font=("Arial", 15))
-    # entry_pseudo.pack(ipadx=2, ipady=10, padx=5,pady=5)
-    entry_pseudo.grid(row=1, column=1)
+    tk.Label(window_info02, text=f'Pseudo:{username}', font=("Arial", 15)).grid(row=1, column=0, padx=5, pady=5)
 
     lbl_result = tk.Label(window_info02, text=f"{pseudo}  Essais réussis : 0/0", font=("Arial", 15))
     lbl_result.grid(row=1, column=2, columnspan=3, ipady=5, padx=20, pady=20)
@@ -145,7 +142,7 @@ def open_window_info_02(window):
     # binding actions (entry & buttons)
     entry_n2.bind("<Return>", test)
     btn_next.bind("<Button-1>", next)
-    btn_finish.bind("<Button-1>", save_game)
+    btn_finish.bind("<Button-1>", lambda e: save_game(e, username))
 
     # Main loop
     window_info02.mainloop()
